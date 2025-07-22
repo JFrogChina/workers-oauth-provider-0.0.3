@@ -26,7 +26,7 @@ jobs:
     strategy:
       matrix:
         # The repository scanning will be triggered periodically on the following branches.
-        branch: ["main"]
+        branch: ["main", "v0.0.3"]
         
     steps:
       - name: Set up pnpm
