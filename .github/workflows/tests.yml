@@ -1,4 +1,4 @@
-name: "Frogbot Security Scan"
+name: "Frogbot Security Scan -0.0.3"
 
 on:
   pull_request:
