@@ -29,11 +29,11 @@ jobs:
     env:
       REF_TYPE: ${{ github.event.inputs.ref_type }}
       REF_NAME: ${{ github.event.inputs.ref_name }}
-      # 根据类型拼出完整 ref
+      # 用于 checkout
       FULL_REF: ${{ github.event.inputs.ref_type == 'tag' && format('refs/tags/{0}', github.event.inputs.ref_name) || format('refs/heads/{0}', github.event.inputs.ref_name) }}
 
     steps:
-      - name: Checkout code at ${{ env.REF_TYPE }}/ ${{ env.REF_NAME }}
+      - name: Checkout code at ${{ env.REF_TYPE }} / ${{ env.REF_NAME }}
         uses: actions/checkout@v4
         with:
           ref: ${{ env.FULL_REF }}
@@ -61,4 +61,5 @@ jobs:
           JF_URL: ${{ secrets.JF_URL }}
           JF_ACCESS_TOKEN: ${{ secrets.JF_ACCESS_TOKEN }}
           JF_GIT_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          JF_GIT_BASE_BRANCH: ${{ env.FULL_REF }}
+          # 直接传分支或 tag 名称，不要带 refs/ 前缀
+          JF_GIT_BASE_BRANCH: ${{ env.REF_NAME }}
