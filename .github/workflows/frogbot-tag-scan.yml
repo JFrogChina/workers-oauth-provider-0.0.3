@@ -1,21 +1,11 @@
-# .github/workflows/frogbot-manual-scan.yml
-name: "Frogbot Manual Scan (Branch or Tag)"
+name: "Frogbot Security Scan – Manual Tag Trigger"
 
 on:
   workflow_dispatch:
     inputs:
-      ref_type:
-        description: 'Choose scan type'
+      tag:
+        description: "The Git tag to scan (e.g., v0.0.3)"
         required: true
-        default: 'branch'
-        type: choice
-        options:
-          - branch
-          - tag
-      ref_name:
-        description: 'Name of branch or tag to scan (e.g., main or v0.0.3)'
-        required: true
-        default: 'main'
 
 permissions:
   contents: write
@@ -23,31 +13,31 @@ permissions:
   security-events: write
 
 jobs:
-  frogbot-scan:
+  scan-tag:
     runs-on: ubuntu-latest
 
-    env:
-      REF_TYPE: ${{ github.event.inputs.ref_type }}
-      REF_NAME: ${{ github.event.inputs.ref_name }}
-      # 用于 checkout
-      FULL_REF: ${{ github.event.inputs.ref_type == 'tag' && format('refs/tags/{0}', github.event.inputs.ref_name) || format('refs/heads/{0}', github.event.inputs.ref_name) }}
-
     steps:
-      - name: Checkout code at ${{ env.REF_TYPE }} / ${{ env.REF_NAME }}
+      # 1. 完整拉取：包含所有 Tag 和历史
+      - name: Checkout full repo including tags
         uses: actions/checkout@v4
         with:
-          ref: ${{ env.FULL_REF }}
-          fetch-depth: 0
+          fetch-depth: 0    # 禁用 shallow clone
           fetch-tags: true
 
-      - name: Debug current ref
+      # 2. 强制切到 Tag ref（避免同名分支被优先选中）
+      - name: Checkout the selected tag
         run: |
-          echo "Requested type       : ${{ env.REF_TYPE }}"
-          echo "Requested name       : ${{ env.REF_NAME }}"
-          echo "Using Git ref        : ${{ env.FULL_REF }}"
-          echo "Resolved HEAD commit : $(git rev-parse --short HEAD)"
-          echo "Tags at this commit  : $(git tag --points-at HEAD || echo none)"
+          git checkout refs/tags/${{ github.event.inputs.tag }}
 
+      # 3. Debug：打印当前 HEAD 是哪个 commit，以及哪些 Tag 指向它
+      - name: Debug current checkout
+        run: |
+          echo "🎯 Current commit:"
+          git rev-parse HEAD
+          echo "🔖 Tags pointing at this commit:"
+          git tag --points-at HEAD
+
+      # 4. Set up pnpm
       - name: Set up pnpm
         run: |
           export SHELL=/bin/bash
@@ -55,11 +45,11 @@ jobs:
           echo "PNPM_HOME=$HOME/.local/share/pnpm" >> $GITHUB_ENV
           echo "PATH=$HOME/.local/share/pnpm:$PATH" >> $GITHUB_ENV
 
-      - name: Run Frogbot security scan
+      # 5. Run Frogbot
+      - name: Run Frogbot security scan on tag
         uses: jfrog/frogbot@v2
         env:
           JF_URL: ${{ secrets.JF_URL }}
           JF_ACCESS_TOKEN: ${{ secrets.JF_ACCESS_TOKEN }}
           JF_GIT_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          # 直接传分支或 tag 名称，不要带 refs/ 前缀
-          JF_GIT_BASE_BRANCH: ${{ env.REF_NAME }}
+          JF_GIT_BASE_BRANCH: ${{ github.event.inputs.tag }}
