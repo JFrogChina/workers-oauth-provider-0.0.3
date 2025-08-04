@@ -49,7 +49,7 @@ jobs:
           echo "Tags at this commit  : $(git tag --points-at HEAD || echo none)"
 
       - name: Push branch to remote (if needed)
-        if: ${{ env.REF_TYPE == 'branch' }}
+        if: ${{ env.REF_TYPE == 'tag' }}
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
