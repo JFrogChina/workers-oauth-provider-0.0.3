@@ -84,7 +84,7 @@ jobs:
           JF_GIT_BASE_BRANCH: ${{ steps.scan_branch.outputs.scan_branch }}
 
       - name: Cleanup remote scan branch
-        if: ${{ env.REF_TYPE == 'tag' }}
+        if: ${{ always() && env.REF_TYPE == 'tag' }}
         run: |
           set -euxo pipefail
           git config user.name "github-actions[bot]"
